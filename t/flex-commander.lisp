@@ -1,21 +1,22 @@
 ;;;; flex-commander.lisp
 
 (defpackage t.flex-commander
-  (:use #:cl
+  (:use #:cl+qt
         #:prove
-        #:flex-commander))
+        #:flex-commander)
+  (:shadow :finalize))
 
-(in-package flex-commander)
+(in-package t.flex-commander)
 
 (plan 2)
 
 (is '("123" "12345" "12")
-    (find-matched-path-list
+    (flex-commander::find-matched-path-list
      '("123" "12345" "1345" "12" "21") "12")
     :test #'equalp)
 
-(ok (consp (get-directory-items "/")))
+(ok (consp (flex-commander::get-directory-items "/")))
 
-(finalize)
+(prove::finalize)
 
 ;; (prove:run :flex-commander)

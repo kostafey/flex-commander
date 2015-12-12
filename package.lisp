@@ -1,7 +1,6 @@
 ;;;; package.lisp
 
 (defpackage #:flex-commander
-  (:use #:cl
-        #:prove)
+  (:use #:cl+qt)
   (:export :find-matched-path-list))
 
