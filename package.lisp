@@ -2,5 +2,6 @@
 
 (defpackage #:flex-commander
   (:use #:cl+qt)
-  (:export :find-matched-path-list))
+  (:export :find-matched-path-list
+           #:main))
 
