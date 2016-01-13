@@ -24,10 +24,14 @@
   ())
 
 (define-subwidget (main-window lst-left)
-                  (q+:make-qlistwidget main-window))
+                  (q+:make-qlistwidget main-window)
+  (mapcar #'(lambda (x) (q+:add-item lst-left x))
+          (get-directory-items "/")))
 
 (define-subwidget (main-window lst-right)
-                  (q+:make-qlistwidget main-window))
+                  (q+:make-qlistwidget main-window)
+  (mapcar #'(lambda (x) (q+:add-item lst-right x))
+          (get-directory-items "/")))
 
 (define-subwidget (main-window layout) (q+:make-qhboxlayout)
   (setf (q+:window-title main-window) "FlexCommander")
