@@ -3,14 +3,23 @@
 (in-package #:flex-commander)
 (in-readtable :qtools)
 
-;;; "flex-commander" goes here. Hacks and glory await!
+(defparameter left-path "/")
+
+(defun remove-last-char (s)
+  (subseq s 0 (1- (length s))))
+
+(defun remove-first-char (s)
+  (subseq s 1))
 
 (defun get-directory-items (path)
-  (map
-   'list
-   'namestring
-   (append (uiop/filesystem:subdirectories path)
-           (uiop/filesystem:directory-files path))))
+  (append
+   (list "..")
+   (mapcar
+    #'(lambda (item) (remove-last-char (namestring  item)))
+    (uiop/filesystem:subdirectories path))
+   (mapcar
+    #'(lambda (item) (remove-first-char (namestring  item)))
+    (uiop/filesystem:directory-files path))))
 
 (defun matches? (path typed-text)
   (let ((len (length typed-text)))
@@ -32,6 +41,23 @@
                   (q+:make-qlistwidget main-window)
   (mapcar #'(lambda (x) (q+:add-item lst-right x))
           (get-directory-items "/")))
+
+(defun info (parent msg)
+  (q+:qmessagebox-information parent "Info" msg))
+
+(defun handle-change-location (&key panel folder)
+  (q+:clear panel)
+  (mapcar #'(lambda (x) (q+:add-item panel x))
+          (get-directory-items (concatenate 'string folder "/"))))
+
+(define-override (main-window key-press-event) (ev)
+  (cond ;; Signal return pressed.
+    ((or (= (q+:key ev) (q+:qt.key_enter))
+         (= (q+:key ev) (q+:qt.key_return)))
+     (handle-change-location :panel (q+:focus-widget *qapplication*)
+                             :folder (q+:text
+                                      (q+:current-item
+                                       (q+:focus-widget *qapplication*)))))))
 
 (define-subwidget (main-window layout) (q+:make-qhboxlayout)
   (setf (q+:window-title main-window) "FlexCommander")
