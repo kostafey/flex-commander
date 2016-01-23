@@ -3,8 +3,6 @@
 (in-package #:flex-commander)
 (in-readtable :qtools)
 
-(defparameter left-path "/")
-
 (defun remove-last-char (s)
   (subseq s 0 (1- (length s))))
 
@@ -32,37 +30,76 @@
 (define-widget main-window (QMainWindow)
   ())
 
+;;------------------------------------------------------------
+;; left
+
 (define-subwidget (main-window lst-left)
                   (q+:make-qlistwidget main-window)
   (mapcar #'(lambda (x) (q+:add-item lst-left x))
           (get-directory-items "/")))
+
+(define-subwidget (main-window path-left)
+                  (q+:make-qlineedit "/"))
+
+;;------------------------------------------------------------
+;; right
 
 (define-subwidget (main-window lst-right)
                   (q+:make-qlistwidget main-window)
   (mapcar #'(lambda (x) (q+:add-item lst-right x))
           (get-directory-items "/")))
 
+(define-subwidget (main-window path-right)
+                  (q+:make-qlineedit "/"))
+
+;;
+;;------------------------------------------------------------
+
 (defun info (parent msg)
   (q+:qmessagebox-information parent "Info" msg))
 
-(defun handle-change-location (&key panel folder)
-  (q+:clear panel)
-  (mapcar #'(lambda (x) (q+:add-item panel x))
-          (get-directory-items (concatenate 'string folder "/"))))
+(defun handle-change-location (&key path-widget panel-widget enter-item)
+  (let* ((current-path (q+:text path-widget))
+         (path (if (equal (subseq enter-item 0 1) "/")
+                   (uiop/pathname:merge-pathnames*
+                    (concatenate 'string current-path "/")
+                    enter-item)
+                   (if (equal enter-item "..")
+                       (uiop/pathname:parse-unix-namestring
+                        (concatenate 'string current-path "/../")))))
+         (path-str (namestring path)))
+    (q+:set-text path-widget path-str)
+    (q+:clear panel-widget)
+    (mapcar #'(lambda (x) (q+:add-item panel-widget x))
+            (get-directory-items path-str))))
 
 (define-override (main-window key-press-event) (ev)
   (cond ;; Signal return pressed.
     ((or (= (q+:key ev) (q+:qt.key_enter))
          (= (q+:key ev) (q+:qt.key_return)))
-     (handle-change-location :panel (q+:focus-widget *qapplication*)
-                             :folder (q+:text
-                                      (q+:current-item
-                                       (q+:focus-widget *qapplication*)))))))
+     (let ((panel (if (eq lst-left (q+:focus-widget *qapplication*))
+                      lst-left
+                      lst-right))
+           (path (if (eq lst-left (q+:focus-widget *qapplication*))
+                     path-left
+                     path-right)))
+       (handle-change-location :path-widget path
+                               :panel-widget panel
+                               :enter-item (q+:text
+                                            (q+:current-item
+                                             (q+:focus-widget
+                                              *qapplication*))))))))
 
 (define-subwidget (main-window layout) (q+:make-qhboxlayout)
   (setf (q+:window-title main-window) "FlexCommander")
-  (q+:add-widget layout lst-left)
-  (q+:add-widget layout lst-right)
+  (let ((ll (q+:make-qvboxlayout)))
+    (q+:add-widget ll path-left)
+    (q+:add-widget ll lst-left)
+    (q+:add-layout layout ll))
+  (let ((rl (q+:make-qvboxlayout)))
+    (q+:add-widget rl path-right)
+    (q+:add-widget rl lst-right)
+    (q+:add-layout layout rl))
   (let ((central-widget (q+:make-qwidget main-window)))
     (setf (q+:layout central-widget) layout)
     (setf (q+:central-widget main-window) central-widget)))
