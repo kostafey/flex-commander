@@ -92,6 +92,9 @@
 
 (define-subwidget (main-window layout) (q+:make-qhboxlayout)
   (setf (q+:window-title main-window) "FlexCommander")
+  (q+:set-font main-window (q+:make-Qfont "FiraMono" 12))
+  (q+:set-spacing layout 3)
+  (q+:set-contents-margins layout 3 3 3 3)
   (let ((ll (q+:make-qvboxlayout)))
     (q+:add-widget ll path-left)
     (q+:add-widget ll lst-left)
