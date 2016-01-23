@@ -9,15 +9,21 @@
 (defun remove-first-char (s)
   (subseq s 1))
 
+(defun add-path-tail (path)
+  (if (equal "/" (subseq path 0 (1- (length path))))
+      path
+      (concatenate 'string path "/")))
+
 (defun get-directory-items (path)
-  (append
-   (list "..")
-   (mapcar
-    #'(lambda (item) (remove-last-char (namestring  item)))
-    (uiop/filesystem:subdirectories path))
-   (mapcar
-    #'(lambda (item) (remove-first-char (namestring  item)))
-    (uiop/filesystem:directory-files path))))
+  (let ((path (add-path-tail path)))
+    (append
+     (list "..")
+     (mapcar
+      #'(lambda (item) (remove-last-char (namestring  item)))
+      (uiop/filesystem:subdirectories path))
+     (mapcar
+      #'(lambda (item) (remove-first-char (namestring  item)))
+      (uiop/filesystem:directory-files path)))))
 
 (defun matches? (path typed-text)
   (let ((len (length typed-text)))
