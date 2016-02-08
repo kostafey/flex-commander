@@ -7,6 +7,7 @@
   :serial t
   :depends-on (:swank
                :prove
+               :pathname-utils
                :qtools :qtcore :qtgui)
   :components ((:file "package")
                (:file "src/flex-commander")
