@@ -11,6 +11,7 @@
                :qtools :qtcore :qtgui)
   :components ((:file "package")
                (:file "src/flex-commander")
+               (:file "src/path-lib")
                (:file "t/flex-commander"))
   :defsystem-depends-on (:qtools)
   :build-operation "qt-program-op"

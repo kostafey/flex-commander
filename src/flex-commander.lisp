@@ -3,50 +3,6 @@
 (in-package #:flex-commander)
 (in-readtable :qtools)
 
-(defun remove-last-char (s)
-  (subseq s 0 (1- (length s))))
-
-(defun remove-first-char (s)
-  (subseq s 1))
-
-(defun add-path-tail (path)
-  (if (equal "/" (subseq path 0 (1- (length path))))
-      path
-      (concatenate 'string path "/")))
-
-(defun get-directory-items (path)
-  (let ((path (add-path-tail path)))
-    (append
-     (list "..")
-     (mapcar
-      #'(lambda (item) (remove-last-char (namestring  item)))
-      (uiop/filesystem:subdirectories path))
-     (mapcar
-      #'(lambda (item) (remove-first-char (namestring  item)))
-      (uiop/filesystem:directory-files path)))))
-
-(defun first-slash? (str)
-  "It's a directory. E.g.
-  /home/user/.emacs - directory
-  home/user/.Xresources - file"
-  (equal (subseq str 0 1) "/"))
-
-(defun format-directory-items (items)
-  (mapcar
-   #'(lambda (item)
-       (if (first-slash? item)
-           (concatenate 'string "/" (file-name item))
-           (file-name item)))
-   items))
-
-(defun matches? (path typed-text)
-  (let ((len (length typed-text)))
-    (equal (subseq path 0 len) typed-text)))
-
-(defun find-matched-path-list (path-list typed-text)
-  (remove-if-not (lambda (x) (matches? x typed-text))
-                 path-list))
-
 (define-widget main-window (QMainWindow)
   ())
 
@@ -85,6 +41,8 @@
           (format-directory-items
            (get-directory-items path-str))))
 
+(defun handle-fileter-location ())
+
 (define-override (main-window key-press-event) (ev)
   ;; Assume :focus-widget is one of the panels
   (let* ((panel-widget (if (eq lst-left (q+:focus-widget *qapplication*))
@@ -119,7 +77,12 @@
          'string
          "switch-to-emacsclient -n "
          "\"" path-str "\"")
-        :ignore-error-status t)))))
+        :ignore-error-status t))
+      ((and
+        (>= (q+:key ev) (q+:qt.key_a))
+        (<= (q+:key ev) (q+:qt.key_z)))
+       ;;TODO:
+       (handle-fileter-location)))))
 
 ;; (with-output-to-string (s)
 ;;   (uiop/run-program:run-program "ls" :output s))
