@@ -8,6 +8,7 @@
   :depends-on (:swank
                :prove
                :pathname-utils
+               :alexandria
                :qtools :qtcore :qtgui)
   :components ((:file "package")
                (:file "src/flex-commander")

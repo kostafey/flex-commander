@@ -12,7 +12,7 @@
 (define-subwidget (main-window lst-left)
                   (q+:make-qlistwidget main-window)
   (mapcar #'(lambda (x) (q+:add-item lst-left x))
-          (get-directory-items "/")))
+          (get-directory-items "/" (list ".."))))
 
 (define-subwidget (main-window path-left)
                   (q+:make-qlineedit "/"))
@@ -23,7 +23,7 @@
 (define-subwidget (main-window lst-right)
                   (q+:make-qlistwidget main-window)
   (mapcar #'(lambda (x) (q+:add-item lst-right x))
-          (get-directory-items "/")))
+          (get-directory-items "/" (list ".."))))
 
 (define-subwidget (main-window path-right)
                   (q+:make-qlineedit "/"))
@@ -36,7 +36,13 @@
 
 (defun handle-change-location (&key path-widget panel-widget path-str)
   (q+:set-text path-widget path-str)
-  (q+:clear panel-widget)
+  (dolist
+      (i (alexandria:iota (- (q+:count panel-widget) 1)
+                          :start (- (q+:count panel-widget) 1)
+                          :step -1))
+    (q+:remove-item-widget
+     panel-widget
+     (q+:take-item panel-widget i)))
   (mapcar #'(lambda (x) (q+:add-item panel-widget x))
           (format-directory-items
            (get-directory-items path-str))))

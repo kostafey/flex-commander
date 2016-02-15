@@ -12,10 +12,11 @@
       path
       (concatenate 'string path "/")))
 
-(defun get-directory-items (path)
-  (let ((path (add-path-tail path)))
+(defun get-directory-items (path &optional init-list)
+  (let ((path (add-path-tail path))
+        (init-list (if init-list init-list (list))))
     (append
-     (list "..")
+     init-list
      (mapcar
       #'(lambda (item) (remove-last-char (namestring  item)))
       (uiop/filesystem:subdirectories path))
