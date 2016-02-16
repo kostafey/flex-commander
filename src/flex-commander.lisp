@@ -9,21 +9,19 @@
 ;;------------------------------------------------------------
 ;; left
 
-(define-subwidget (main-window lst-left)
-                  (q+:make-qlistwidget main-window)
-  (mapcar #'(lambda (x) (q+:add-item lst-left x))
-          (get-directory-items "/" (list ".."))))
-
 (define-subwidget (main-window path-left)
                   (q+:make-qlineedit "/"))
+
+(define-subwidget (main-window lst-left)
+                  (q+:make-qlistwidget main-window)
+  (draw-directory-items lst-left "/"))
 
 ;;------------------------------------------------------------
 ;; right
 
 (define-subwidget (main-window lst-right)
                   (q+:make-qlistwidget main-window)
-  (mapcar #'(lambda (x) (q+:add-item lst-right x))
-          (get-directory-items "/" (list ".."))))
+  (draw-directory-items lst-right "/"))
 
 (define-subwidget (main-window path-right)
                   (q+:make-qlineedit "/"))
@@ -34,61 +32,81 @@
 (defun info (parent msg)
   (q+:qmessagebox-information parent "Info" msg))
 
-(defun handle-change-location (&key path-widget panel-widget path-str)
-  (q+:set-text path-widget path-str)
-  (dolist
-      (i (alexandria:iota (- (q+:count panel-widget) 1)
-                          :start (- (q+:count panel-widget) 1)
-                          :step -1))
-    (q+:remove-item-widget
-     panel-widget
-     (q+:take-item panel-widget i)))
-  (mapcar #'(lambda (x) (q+:add-item panel-widget x))
+(defun draw-directory-items (panel-widget path-str)
+  (if (> (q+:count panel-widget) 0)
+      (dolist
+          (i (alexandria:iota (- (q+:count panel-widget) 1)
+                              :start (- (q+:count panel-widget) 1)
+                              :step -1))
+        (q+:remove-item-widget
+         panel-widget
+         (q+:take-item panel-widget i)))
+      (q+:add-item panel-widget ".."))
+  (mapcar #'(lambda (x)
+              (let ((item (q+:make-qlistwidgetitem)))
+                (if (first-slash? x)
+                    (progn
+                      (q+:set-text item (remove-first-char x))
+                      (q+:set-icon item (q+:make-qicon
+                                         "../resources/folder.png"))
+                      (q+:set-whats-this item "folder"))
+                    (progn
+                      (q+:set-text item x)
+                      (q+:set-icon item (q+:make-qicon
+                                         "../resources/file.png"))))
+                (q+:add-item panel-widget item)))
           (format-directory-items
            (get-directory-items path-str))))
 
-(defun handle-fileter-location ())
+(defun handle-change-location (&key path-widget panel-widget path-str)
+  (q+:set-text path-widget path-str)
+  (draw-directory-items panel-widget path-str))
 
 (define-override (main-window key-press-event) (ev)
   ;; Assume :focus-widget is one of the panels
-  (let* ((panel-widget (if (eq lst-left (q+:focus-widget *qapplication*))
-                           lst-left
-                           lst-right))
-         (path-widget (if (eq lst-left (q+:focus-widget *qapplication*))
-                          path-left
-                          path-right))
-         (enter-item (q+:text
-                      (q+:current-item
-                       (q+:focus-widget
-                        *qapplication*))))
-         (current-path (q+:text path-widget))
-         (item-path (if (equal enter-item "..")
-                        (uiop/pathname:parse-unix-namestring
-                         (concatenate 'string current-path "/../"))
-                        (uiop/pathname:merge-pathnames*
-                         (concatenate 'string current-path "/")
-                         enter-item)))
-         (path-str (namestring item-path)))
-    (cond
-      ;; Signal return pressed.
-      ((or (= (q+:key ev) (q+:qt.key_enter))
-           (= (q+:key ev) (q+:qt.key_return)))
-       (handle-change-location :path-widget path-widget
-                               :panel-widget panel-widget
-                               :path-str path-str))
-      ;; F4 - editor
-      ((= (q+:key ev) (q+:qt.key_f4))
-       (uiop/run-program:run-program
-        (concatenate
-         'string
-         "switch-to-emacsclient -n "
-         "\"" path-str "\"")
-        :ignore-error-status t))
-      ((and
-        (>= (q+:key ev) (q+:qt.key_a))
-        (<= (q+:key ev) (q+:qt.key_z)))
-       ;;TODO:
-       (handle-fileter-location)))))
+  (if (or (eq lst-left (q+:focus-widget *qapplication*))
+          (eq lst-right (q+:focus-widget *qapplication*)))
+      (let* ((panel-widget (if (eq lst-left (q+:focus-widget *qapplication*))
+                               lst-left
+                               lst-right))
+             (path-widget (if (eq lst-left (q+:focus-widget *qapplication*))
+                              path-left
+                              path-right))
+             (enter-item (q+:text
+                          (q+:current-item
+                           (q+:focus-widget
+                            *qapplication*))))
+             (current-path (q+:text path-widget))
+             (item-path (if (equal enter-item "..")
+                            (if (not (equal current-path "/"))
+                             (uiop/pathname:parse-unix-namestring
+                              (concatenate 'string current-path "/../"))
+                             "/")
+                            (uiop/pathname:merge-pathnames*
+                             (concatenate 'string current-path "/")
+                             enter-item)))
+             (path-str (namestring item-path))
+             (is-folder? (or (equal enter-item "..")
+                             (equal (q+:whats-this (q+:current-item
+                                                    (q+:focus-widget
+                                                     *qapplication*)))
+                                    "folder"))))
+        (cond
+          ;; Signal return pressed.
+          ((and is-folder?
+                (or (= (q+:key ev) (q+:qt.key_enter))
+                    (= (q+:key ev) (q+:qt.key_return))))
+           (handle-change-location :path-widget path-widget
+                                   :panel-widget panel-widget
+                                   :path-str path-str))
+          ;; F4 - editor
+          ((= (q+:key ev) (q+:qt.key_f4))
+           (uiop/run-program:run-program
+            (concatenate
+             'string
+             "switch-to-emacsclient -n "
+             "\"" path-str "\"")
+            :ignore-error-status t))))))
 
 ;; (with-output-to-string (s)
 ;;   (uiop/run-program:run-program "ls" :output s))
