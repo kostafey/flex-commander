@@ -1,6 +1,15 @@
 (in-package #:flex-commander)
 (in-readtable :qtools)
 
+(defun first-slash? (str)
+  "It's a directory. E.g.
+  /home/user/.emacs.d - directory
+  home/user/.Xresources - file"
+  (equal (subseq str 0 1) "/"))
+
+(defun last-slash? (str)
+  (equal (subseq str (1- (length str)) (length str)) "/"))
+
 (defun remove-last-char (s)
   (subseq s 0 (1- (length s))))
 
@@ -8,35 +17,35 @@
   (subseq s 1))
 
 (defun add-path-tail (path)
-  (if (equal "/" (subseq path 0 (1- (length path))))
+  (if (last-slash? path)
       path
       (concatenate 'string path "/")))
 
-(defun get-directory-items (path &optional init-list)
-  (let ((path (add-path-tail path))
-        (init-list (if init-list init-list (list))))
-    (append
-     init-list
-     (mapcar
-      #'(lambda (item) (remove-last-char (namestring  item)))
-      (uiop/filesystem:subdirectories path))
-     (mapcar
-      #'(lambda (item) (remove-first-char (namestring  item)))
-      (uiop/filesystem:directory-files path)))))
+(defun get-directory-items (path)
+  (let* ((path (add-path-tail path))
+         (path-pattern (concatenate 'string path "*.*")))
+    (uiop/filesystem:directory* (pathname path-pattern))))
 
-(defun first-slash? (str)
-  "It's a directory. E.g.
-  /home/user/.emacs.d - directory
-  home/user/.Xresources - file"
-  (equal (subseq str 0 1) "/"))
+(defun filter-list-into-two-parts (predicate list)
+  (loop for x in list
+        if (funcall predicate x) collect x into yes
+          else collect x into no
+        finally (return (values yes no))))
 
 (defun format-directory-items (items)
-  (mapcar
-   #'(lambda (item)
-       (if (first-slash? item)
-           (concatenate 'string "/" (file-name item))
-           (file-name item)))
-   items))
+  (multiple-value-bind (dirs files)
+      (filter-list-into-two-parts
+       'directory-p
+       items)
+    (append
+     (mapcar
+      #'(lambda (item)
+          (concatenate 'string "/" (directory-name (namestring item))))
+      dirs)
+     (mapcar
+      #'(lambda (item)
+          (file-name (namestring item)))
+      files))))
 
 (defun matches? (path typed-text)
   (let ((path (if (first-slash? path)
