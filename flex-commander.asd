@@ -22,3 +22,9 @@
 ;; C-c C-k (ql:quickload :flex-commander)
 ;; (load #P"flex-commander.asd")
 ;; (asdf:operate :build-op :flex-commander)
+
+;; Windows
+;; cd %HOMEPATH%/.roswell/lisp/quicklisp/local-projects/flex-commander/bin/
+;; ros run -core
+;; (ql:quickload :flex-commander)
+;; (asdf:operate :build-op :flex-commander)
