@@ -13,7 +13,9 @@
   :components ((:file "package")
                (:file "src/flex-commander")
                (:file "src/path-lib")
-               (:file "t/flex-commander"))
+               (:file "t/flex-commander")
+               (:static-file "resources/file.png")
+               (:static-file "resources/folder.png"))
   :defsystem-depends-on (:qtools)
   :build-operation "qt-program-op"
   :build-pathname "flex-commander"
